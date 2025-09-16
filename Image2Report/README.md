@@ -1,4 +1,4 @@
-# [TriALS-MICCAI-2024](https://www.synapse.org/#!Synapse:syn53285416/wiki/)
+<!-- # [TriALS-MICCAI-2024](https://www.synapse.org/#!Synapse:syn53285416/wiki/)
 
 
 Welcome to the official repository for the TriALS challenge
@@ -193,4 +193,4 @@ If you utilize the baselines in this repository for your research, please consid
 ## Acknowledgements
 
 We would like to acknowledge the contributions of [nnU-Net](https://github.com/MIC-DKFZ/nnUNet) and the authors of the baseline models: [LightM-UNet](https://github.com/mrblankness/lightm-unet), [MedNeXT](https://github.com/MIC-DKFZ/MedNeXt), and [SAMed](https://github.com/hitachinsk/SAMed). This repository builds upon their foundational code and work.
-
+ -->
