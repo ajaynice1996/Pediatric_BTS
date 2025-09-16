@@ -219,6 +219,11 @@ Image2Report/docker
 Image2Report/TriALS_2025_Interactive_Task_2
 Image2Report/checkpoints
 
-
+data/
+results/
+nnUNet_raw/
+nnUNet_preprocessed/
+nnUNet_trained_models/
+nnUNet_results/
 
 
