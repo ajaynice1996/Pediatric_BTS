@@ -206,4 +206,19 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-Image2Report/
+Image2Report/*.png
+Image2Report/*.jpg
+Image2Report/*.jpeg
+Image2Report/*.gif
+Image2Report/*.bmp
+Image2Report/*.csv
+Image2Report/*.tsv
+Image2Report/*.pdf
+Image2Report/*.log
+Image2Report/docker
+Image2Report/TriALS_2025_Interactive_Task_2
+Image2Report/checkpoints
+
+
+
+
