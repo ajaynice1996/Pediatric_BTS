@@ -227,3 +227,4 @@ nnUNet_trained_models/
 nnUNet_results/
 
 
+med-sam-brain/data/brats_ped
