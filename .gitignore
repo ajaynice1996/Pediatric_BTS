@@ -1,3 +1,4 @@
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -242,3 +243,6 @@ data/imtest
 # Ignore datasets
 data/imtest
 /drive/MyDrive/Pediatric_BTS/med-sam-brain/data/brats_ped
+
+med-sam-brain/data/brats_ped
+
