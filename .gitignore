@@ -238,3 +238,7 @@ data/imtest
 # Ignore datasets
 data/imtest
 /drive/MyDrive/Pediatric_BTS/med-sam-brain/data/brats_ped
+
+# Ignore datasets
+data/imtest
+/drive/MyDrive/Pediatric_BTS/med-sam-brain/data/brats_ped
