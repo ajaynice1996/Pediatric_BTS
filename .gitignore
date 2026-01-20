@@ -227,3 +227,6 @@ nnUNet_trained_models/
 nnUNet_results/
 
 
+
+# Ignore datasets
+data/imtest
