@@ -1,279 +1,199 @@
-import re
 import os
-import json
+import subprocess
+from pathlib import Path
+
+for var in ["nnUNet_raw", "nnUNet_preprocessed", "nnUNet_results"]:
+    os.environ.pop(var, None)  # removes variable if it exists
+
+# Set environment variables for nnUNet
+os.environ["nnUNet_raw"] = "nnUNet_raw"
+os.environ["nnUNet_results"] = "nnUNet_results"
+os.environ["nnUNet_preprocessed"] = "nnUNet_preprocessed"
+
+# Define paths for the dataset
+
+print(len(os.listdir('./nnUNet_raw/Dataset202_BraTS/labelsTr')))
+
+# Define dataset ID and configuration
+dataset_id = "202"  # Custom dataset ID
+config = "3d_fullres"  # Configuration type (2d, 3d_fullres, etc.)
+fold = "2"  # GPU/device ID or fold
+
+# # # Step 1: Run nnUNetv2_plan_and_preprocess
+
+# print("Running nnUNetv2_plan_and_preprocess...")
+# subprocess.run([
+#     "nnUNetv2_plan_and_preprocess",
+#     "-d", dataset_id,
+#     "-c", config,
+#     "--verify_dataset_integrity"
+# ], check=True)
+
+# Step 2: Optional – Count preprocessed files
+preprocessed_dir = Path(f"nnUNet_preprocessed/Dataset202_BraTS/nnUNetPlans_3d_fullres")
+if preprocessed_dir.exists():
+    print(f"Number of preprocessed files in {preprocessed_dir}: {len(list(preprocessed_dir.iterdir()))}")
+else:
+    print(f"Preprocessed directory not found: {preprocessed_dir}")
+
+# Check GPU status using PyTorch
+
 import torch
-import shutil
-import random
-torch.__version__
 
-import os
-import numpy as np
+# Check if CUDA is available
+cuda_available = torch.cuda.is_available()
+print(f"CUDA available: {cuda_available}")
 
-os.environ["nnUNet_raw_data_base"] = "data/nnUNet_raw_data_base"
-os.environ["RESULTS_FOLDER"] = "data/nnUNet_results"
-os.environ["nnUNet_preprocessed"] = "data/nnUNet_preprocessed"
-
-os.makedirs('data/nnUNet_raw_data_base/Dataset202_BraTS/imagesTr', exist_ok=True)
-os.makedirs('data/nnUNet_raw_data_base/Dataset202_BraTS/labelsTr', exist_ok=True)
-
-import os
-import shutil
-
-# ↳Dataset2023
-#   ↳imagesTr
-#     BraTS_0001_0000.nii.gz
-#     BraTS_0001_0001.nii.gz
-#     BraTS_0001_0002.nii.gz
-#     BraTS_0001_0003.nii.gz
-#   ↳labelsTr
-#     BraTS_0001.nii.gz
-
-# Moving Brain MRI Modalities to nnUNet_raw/Dataset2023/imagesTr
-# Moving Segmentation Masks to nnUNet_raw/Dataset2023/labelsTr
-
-import os
-
-# Base directory containing folders like BraTS-PED-00224-000
-base_path = '../raw data subset/Training'  # replace with your actual path
-labels_dir = 'data/nnUNet_raw_data_base/Dataset202_BraTS/labelsTr'
-images_dir = 'data/nnUNet_raw_data_base/Dataset202_BraTS/imagesTr'
-
-# Paths and setup variables
-output_file = 'data/nnUNet_raw_data_base/Dataset202_BraTS/dataset.json'
-imagesTr = images_dir
-imagesTs = 'data/nnUNet_raw_data_base/Dataset202_BraTS/imagesTs'
-labelsTr = labels_dir
-
-# Read all directories
-folders = [f for f in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, f))]
-
-print(f"Total folders found: {len(folders)}")
-# Extract sorting key based on the second numeric component
-def extract_key(folder_name):
-    parts = folder_name.split('-')
-    if len(parts) >= 3 and parts[2].isdigit():
-        return int(parts[2])
-    elif len(parts) >= 3 and parts[1].isdigit():
-        return int(parts[1])
-    else:
-        return float('inf')
-case_id = 0
-# Sort the folder list
-sorted_folders = sorted(folders, key=extract_key)
-
-import os
-import shutil
-
-# Loop through sorted folders
-for folder in sorted_folders:
-    parts = folder.split('-')
-    if len(parts) >= 3:
-        case_id = int(parts[2])  # Convert to integer for sorting
-        print(f"Folder: {folder}, Case ID: {case_id}")
-    else:
-        print(f"Skipping malformed folder name: {folder}")
-        continue
-
-    folder_path = os.path.join(base_path, folder)
-
-    for file in os.listdir(folder_path):
-        print(f"Processing file: {file}")
-
-        if 'seg' in file:
-            shutil.copy(os.path.join(folder_path, file), labels_dir)
-            os.rename(os.path.join(labels_dir, file),
-                      os.path.join(labels_dir, f"BraTSPED_{case_id:04d}.nii.gz"))
-
-        if 't1n' in file or 't1.nii' in file:
-            shutil.copy(os.path.join(folder_path, file), images_dir)
-            os.rename(os.path.join(images_dir, file),
-                      os.path.join(images_dir, f"BraTSPED_{case_id:04d}_0000.nii.gz"))
-            
-        if 't1c' in file or 't1ce' in file:
-            shutil.copy(os.path.join(folder_path, file), images_dir)
-            os.rename(os.path.join(images_dir, file),
-                      os.path.join(images_dir, f"BraTSPED_{case_id:04d}_0001.nii.gz"))
-
-
-        if 't2f' in file or 'flair' in file:
-            shutil.copy(os.path.join(folder_path, file), images_dir)
-            os.rename(os.path.join(images_dir, file),
-                      os.path.join(images_dir, f"BraTSPED_{case_id:04d}_0002.nii.gz"))
-
-        if 't2w' in file or 't2.nii' in file:
-            shutil.copy(os.path.join(folder_path, file), images_dir)
-            os.rename(os.path.join(images_dir, file),
-                      os.path.join(images_dir, f"BraTSPED_{case_id:04d}_0003.nii.gz"))
-
-
-# Renaming imagesTr Files to nnU-Net Format
-
-# def rename_file(filename, patient_counters):
-#     pattern = re.compile(r'BraTS-SSA-(\d+)-(\d+)-(\d+)\.nii\.gz')
-#     print(f"Processing : {pattern}")
-
-#     match = pattern.match(filename)
-#     if match:
-#         patient_id = match.group(1)
-#         modality_part = match.group(3)
-
-#         if patient_id not in patient_counters:
-#             patient_counters[patient_id] = len(patient_counters)
-            
-#         series_part = str(patient_counters[patient_id]).zfill(4)
-
-#         new_filename = f'BraTS{patient_id}_{series_part}_{modality_part}.nii.gz'
-#         return new_filename
-#     return None
-
-# patient_counters = {}
-# file_list = sorted(os.listdir('data/nnUNet_raw_data_base/Task2023_BraTS/imagesTr/'))
-# for filename in file_list:
-#     new_filename = rename_file(filename, patient_counters)
-#     print(f"Renaming {filename} to {new_filename}")
-#     if new_filename:
-#         os.rename(f'data/nnUNet_raw_data_base/Task2023_BraTS/imagesTr/{filename}', f'data/nnUNet_raw_data_base/Task2023_BraTS/imagesTr/{new_filename}')
-
-
-import json
-from typing import Tuple
-
-# for nnUNetV2
-tranining_len = len(os.listdir('data/nnUNet_raw_data_base/Dataset202_BraTS/labelsTr'))
-print(f"Number of training subjects: {tranining_len}")
-
-data = {
-    "channel_names": {
-        "0": "t1n",
-        "1": "t1c",
-        "2": "t2f",
-        "3": "t2w"
-    },
+if cuda_available:
+    # Number of GPUs
+    num_gpus = torch.cuda.device_count()
+    print(f"Number of GPUs: {num_gpus}")
     
-    "labels": {
-        "background" : 0,
-        "ET" : 1,
-        "NET" : 2,
-        "CC" : 3,
-        "ED" : 4,
-    },
-
-    "replacements" : {
-    't1n':'_0000',
-    't1c':'_0001',
-    't2f':'_0002',
-    't2w':'_0003',
-    'seg':'',
-    '-PED':'PED',
-    '-000-':'',
-    '-' : '_',
-    },
-    "numTraining": tranining_len,
-    "file_ending": ".nii.gz"
-}
-
-filename = 'dataset.json'
-
-with open(f'{output_file}', 'w') as file:
-    json.dump(data, file, indent=4)
-
-
-# # -----------------
-# # for medNext; not working ofr NNUnetV2
-# # modalities = ("t1c", "t1n", "t2f", "t2w")
-# # labels = {0 : "background", 1 : "ET", 2 : "WT", 3 : "ET"}
-
-# channel_names = {
-#         0: "t1n",
-#         1: "t1c",
-#         2: "t2f",
-#         3: "t2w"
-#     }
-
-# labels = {
-#         0 : "background",
-#         1 : "ET",
-#         2 : "NET",
-#         3 : "CC",
-#         4 : "ED",
-#     }
+    for i in range(num_gpus):
+        print(f"\nGPU {i}: {torch.cuda.get_device_name(i)}")
+        print(f"Memory Allocated: {torch.cuda.memory_allocated(i)/1024**3:.2f} GB")
+        print(f"Memory Cached:    {torch.cuda.memory_reserved(i)/1024**3:.2f} GB")
+        print(f"Memory Free:      {(torch.cuda.get_device_properties(i).total_memory - torch.cuda.memory_reserved(i))/1024**3:.2f} GB")
     
-# # labels = {
-# #     "background" : 0,
-# #     "ET" : 1,
-# #     "NET" : 2,
-# #     "CC" : 3,
-# #     "ED" : 4,
-# # }
+    # Clear cache
+    torch.cuda.empty_cache()
+    print("\nCUDA cache cleared.")
 
-# replacements = {
-#     't1n':'_0000',
-#     't2f':'_0002',
-#     't2w':'_0003',
-#     'seg':'',
-#     '-PED':'PED',
-#     '-000-':'',
-#     '-' : '_',
-#     }
+# nnU-Net 3D
+print("Starting training: nnUNetTrainer_100epochs...")
+subprocess.run([
+    "nnUNetv2_train",
+    dataset_id,
+    config,
+    fold,
+    "-tr", "nnUNetTrainer_100epochs"
+], check=True)
 
-# filename = 'dataset.json'
-# dataset_name = 'Dataset202_BraTS'
+# ResNet -- Working
+print("Starting training: nnUNetTrainerResNet_100epochs...")
+subprocess.run([
+    "nnUNetv2_train",
+    dataset_id,
+    config,
+    fold,
+    "-tr", "nnUNetTrainerResNet_100epochs",
+], check=True)
 
-# def save_json(obj, file, sort_keys=True):
-#     with open(file, 'w') as f:
-#         json.dump(obj, f, indent=4, sort_keys=sort_keys)
+# # SegResNet -- Working
+# print("Starting training: nnUNetTrainerSegResNet_100epochs...")
+# subprocess.run([
+#     "nnUNetv2_train",
+#     dataset_id,
+#     config,
+#     fold,
+#     "-tr", "nnUNetTrainerSegResNet_100epochs",
+# ], check=True)
 
-# def subfiles(folder, suffix, join=True):
-#     all_files = []
-#     for root, _, files in os.walk(folder):
-#         for file in files:
-#             if file.endswith(suffix):
-#                 if join:
-#                     all_files.append(os.path.join(root, file))
-#                 else:
-#                     all_files.append(file)
-#     return all_files
+# # U-Mamba -- Woking Training
+# print("Starting training: nnUNetTrainerUMambaBot_100epochs...")
+# subprocess.run([
+#     "nnUNetv2_train",
+#     dataset_id,
+#     config,
+#     fold,
+#     "-tr", "nnUNetTrainerUMambaBot_100epochs"
+# ], check=True)
 
-# def get_identifiers_from_splitted_files(folder: str):
-#     uniques = np.unique([i[:-12] for i in subfiles(folder, suffix='.nii.gz', join=False)])
-#     return uniques
+# # Swin-UNETR -- not running due to memory issues
+# print("Starting training: nnUNetTrainerSwinUNETR_100epochs...")
+# subprocess.run([
+#     "nnUNetv2_train",
+#     dataset_id,
+#     config,
+#     fold,
+#     "-tr", "nnUNetTrainerSwinUNETR_100epochs"
+# ], check=True)
 
-# def generate_dataset_json(output_file: str, imagesTr_dir: str, imagesTs_dir: str, modalities: tuple,
-#                           labels: dict, dataset_name: str, sort_keys=True, license: str = "hands off!", dataset_description: str = "",
-#                           dataset_reference="", dataset_release='0.0'):
-#     train_identifiers = get_identifiers_from_splitted_files(imagesTr_dir)
+import torch
 
-#     if imagesTs_dir is not None:
-#         test_identifiers = get_identifiers_from_splitted_files(imagesTs_dir)
-#     else:
-#         test_identifiers = []
+# Check if CUDA is available
+cuda_available = torch.cuda.is_available()
+print(f"CUDA available: {cuda_available}")
 
-#     json_dict = {}
-#     json_dict['name'] = dataset_name
-#     # json_dict['description'] = dataset_description
-#     json_dict['tensorImageSize'] = "4D"
-#     # json_dict['reference'] = dataset_reference
-#     # json_dict['licence'] = license
-#     # json_dict['release'] = dataset_release
-#     json_dict['channel_names'] = {str(i): channel_names[i] for i in range(len(channel_names))}
-#     json_dict['labels'] = {str(i): labels[i] for i in labels.keys()}
+if cuda_available:
+    # Number of GPUs
+    num_gpus = torch.cuda.device_count()
+    print(f"Number of GPUs: {num_gpus}")
+    
+    for i in range(num_gpus):
+        print(f"\nGPU {i}: {torch.cuda.get_device_name(i)}")
+        print(f"Memory Allocated: {torch.cuda.memory_allocated(i)/1024**3:.2f} GB")
+        print(f"Memory Cached:    {torch.cuda.memory_reserved(i)/1024**3:.2f} GB")
+        print(f"Memory Free:      {(torch.cuda.get_device_properties(i).total_memory - torch.cuda.memory_reserved(i))/1024**3:.2f} GB")
+    
+    # Clear cache
+    torch.cuda.empty_cache()
+    print("\nCUDA cache cleared.")
 
-#     json_dict['numTraining'] = len(train_identifiers)
-#     json_dict['file_ending'] = ".nii.gz"
-#     json_dict['numTest'] = len(test_identifiers)
-#     json_dict['training'] = [
-#         {'image': f"./imagesTr/{i}.nii.gz", "label": f"./labelsTr/{i}.nii.gz"} for i in train_identifiers]
-#     json_dict['test'] = [f"./imagesTs/{i}.nii.gz" for i in test_identifiers]
+## MedNext-B-5 -- not working - CUDA out of memory
+# print("Starting training: nnUNetTrainerV2_MedNeXt_B_kernel5_100epochs...")
+# subprocess.run([
+#     "nnUNetv2_train",
+#     dataset_id,
+#     config,
+#     fold,
+#     "-tr", "nnUNetTrainerV2_MedNeXt_B_kernel5_100epochs"
+# ], check=True)
 
-#     if not output_file.endswith("dataset.json"):
-#         print("WARNING: output file name is not dataset.json! This may be intentional or not. You decide. "
-#               "Proceeding anyways...")
-#     save_json(json_dict, output_file, sort_keys=sort_keys)
+## MedNext-L-5 -- not working - CUDA out of memory
+# print("Starting training: nnUNetTrainerV2_MedNeXt_L_kernel5_100epochs...")
+# subprocess.run([
+#     "nnUNetv2_train",
+#     dataset_id,
+#     config,
+#     fold,
+#     "-tr", "nnUNetTrainerV2_MedNeXt_L_kernel5_100epochs"
+# ], check=True)
 
+# # LightM-UNet -- Not working - CUDA out of memory
+# print("Starting training: nnUNetTrainerLightMUNet_100epochs...")
+# subprocess.run([
+#     "nnUNetv2_train",
+#     dataset_id,
+#     config,
+#     fold,
+#     "-tr", "nnUNetTrainerLightMUNet_100epochs"
+# ], check=True)
 
-# generate_dataset_json(output_file=output_file, 
-#                       imagesTr_dir=imagesTr, 
-#                       imagesTs_dir=imagesTs,
-#                       modalities=channel_names,
-#                       labels=labels, 
-#                       dataset_name=dataset_name)
+## Post-processing and prediction
+# trainers = [
+#     "nnUNetTrainerUMambaBot_100epochs"
+# ]
+
+# subprocess.run([
+#     "nnUNetv2_find_best_configuration",
+#     dataset_id,
+#     "-c", config,
+#     "-f", fold,
+#     "-tr", *trainers,
+# ], check=True)
+
+# # Ensemble prediction
+# # List of prediction folders to ensemble
+# prediction_folders = [
+#     "TriALS/nnUNet_results/Dataset202_BraTS/nnUNetTrainerSegResNet_100epochs__nnUNetPlans__3d_fullres/fold_2/validation/",
+#     "TriALS/nnUNet_results/Dataset202_BraTS/nnUNetTrainerUMambaBot_100epochs__nnUNetPlans__3d_fullres/fold_2/validation/",
+#     # add more folders if needed
+# ]
+
+# # Output folder for the ensemble results
+# output_folder = "TriALS/nnUNet_results/Dataset202_BraTS/Ensemble_prediction/"
+
+# # # Number of processes to use (optional)
+# num_processes = 4
+
+# # Build the command
+# cmd = [
+#     "nnUNetv2_ensemble",
+#     "-i", *prediction_folders,
+#     "-o", output_folder,
+#     "-np", str(num_processes)
+# ]
+
+# # Run the ensemble
+# subprocess.run(cmd, check=True)
